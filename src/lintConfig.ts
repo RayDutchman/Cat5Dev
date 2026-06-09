@@ -248,17 +248,18 @@ temp/
 }
 
 /** cat5dev.toml の [project] セクションから設定を読み込む */
-export function readProjectSettings(workspaceRoot: string): { targetProject: string; language: string } {
+export function readProjectSettings(workspaceRoot: string): { targetProject: string; language: string; encoding: string } {
     const tomlPath = path.join(workspaceRoot, 'cat5dev.toml');
-    if (!fs.existsSync(tomlPath)) { return { targetProject: '', language: 'ja' }; }
+    if (!fs.existsSync(tomlPath)) { return { targetProject: '', language: 'ja', encoding: 'shift_jis' }; }
 
     let content: string;
-    try { content = fs.readFileSync(tomlPath, 'utf-8'); } catch { return { targetProject: '', language: 'ja' }; }
+    try { content = fs.readFileSync(tomlPath, 'utf-8'); } catch { return { targetProject: '', language: 'ja', encoding: 'shift_jis' }; }
 
     const proj = parseToml(content)['project'] ?? {};
     const targetProject = (proj['target_project'] ?? '').replace(/^"|"$/g, '');
     const language = (proj['language'] ?? 'ja').replace(/^"|"$/g, '');
-    return { targetProject, language };
+    const encoding = (proj['encoding'] ?? 'shift_jis').replace(/^"|"$/g, '');
+    return { targetProject, language, encoding };
 }
 
 /** cat5dev.toml の [project] セクションの指定キーの値を書き換える（コメント・他行を保持） */
@@ -288,7 +289,8 @@ const tomlComments = {
     ja: {
         header: '# Cat5Dev 設定ファイル',
         targetProject: '# 対象の CATIA VBA プロジェクト名',
-        language: '# 言語設定 (ja / en)',
+        language: '# 言語設定 (ja / en / zh)',
+        encoding: '# VBAファイルの文字エンコーディング (shift_jis / gbk / utf-8 等)',
         optionExplicit: '# Option Explicit が宣言されていない場合に警告',
         onErrorResumeNext: '# On Error Resume Next の使用時に警告',
         goto: '# GoTo の使用時に警告 (On Error GoTo は除外)',
@@ -315,7 +317,8 @@ const tomlComments = {
     en: {
         header: '# Cat5Dev configuration file',
         targetProject: '# Target CATIA VBA project name',
-        language: '# Language (ja / en)',
+        language: '# Language (ja / en / zh)',
+        encoding: '# Character encoding for VBA files (shift_jis / gbk / utf-8, etc.)',
         optionExplicit: '# Warn when Option Explicit is not declared',
         onErrorResumeNext: '# Warn on usage of On Error Resume Next',
         goto: '# Warn on GoTo usage (On Error GoTo is excluded)',
@@ -339,6 +342,34 @@ const tomlComments = {
         expandTypeSuffixes: '# Expand type suffix shorthand (% → Integer, $ → String, etc.)',
         formatOnSave: '# Automatically format on save',
     },
+    zh: {
+        header: '# Cat5Dev 配置文件',
+        targetProject: '# 目标 CATIA VBA 项目名称',
+        language: '# 语言设置 (ja / en / zh)',
+        encoding: '# VBA 文件的字符编码 (shift_jis / gbk / utf-8 等)',
+        optionExplicit: '# 未声明 Option Explicit 时发出警告',
+        onErrorResumeNext: '# 使用 On Error Resume Next 时发出警告',
+        goto: '# 使用 GoTo 时发出警告（On Error GoTo 除外）',
+        maxLineLength: '# 行超过指定字符数时发出警告（0 = 禁用）',
+        unusedVariables: '# 用 Dim 声明但未使用的变量时发出警告',
+        maxNestingDepth: '# 嵌套深度超过阈值时发出警告（0 = 禁用）',
+        maxFunctionLines: '# Sub/Function 行数超过阈值时发出警告（0 = 禁用）',
+        unmatchedParens: '# 将括号不匹配报告为错误',
+        unmatchedBlocks: '# 将缺少 End If / End Sub / End Function 等报告为错误',
+        formatterEnabled: '# 是否启用格式化器',
+        indentSize: '# 每级缩进的空格数',
+        capitalizeKeywords: '# 将 VBA 关键字转为规范大小写（If、Dim、Sub 等）',
+        fixIndentation: '# 自动修正缩进',
+        trimTrailingSpace: '# 删除每行末尾的空白',
+        ensureContinuationSpace: '# 确保续行符 (_) 前有空格',
+        indentContinuationLines: '# 将续行缩进一级',
+        maxBlankLines: '# 连续空行的最大数量（0 = 禁用）',
+        normalizeOperatorSpacing: '# 统一运算符前后的空格（=、+、- 等）',
+        normalizeCommaSpacing: '# 统一逗号后的空格',
+        normalizeCommentSpace: '# 确保注释符（\'）后有空格',
+        expandTypeSuffixes: '# 展开类型后缀缩写（% → Integer、$ → String 等）',
+        formatOnSave: '# 保存时自动格式化',
+    },
 };
 
 /** cat5dev.toml の雛形テキストを返す。値は DEFAULT_*_OPTIONS から生成する */
@@ -346,6 +377,8 @@ export function tomlTemplate(lang: Language = 'ja'): string {
     const l = DEFAULT_LINT_OPTIONS;
     const f = DEFAULT_FORMATTER_OPTIONS;
     const c = tomlComments[lang];
+    // 言語に応じたデフォルトエンコーディング: zh は gbk、それ以外は shift_jis
+    const defaultEncoding = lang === 'zh' ? 'gbk' : 'shift_jis';
     return `${c.header}
 
 [project]
@@ -354,6 +387,9 @@ target_project = ""
 
 ${c.language}
 language = "${lang}"
+
+${c.encoding}
+encoding = "${defaultEncoding}"
 
 [lint]
 enabled = false

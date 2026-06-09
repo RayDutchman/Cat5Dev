@@ -15,6 +15,15 @@ import { startLspClient } from './lspClient';
 
 const outputChannel = vscode.window.createOutputChannel('CATIA VBA Sync');
 
+/** ワークスペースルートの cat5dev.toml から encoding 設定を読む。toml がなければ 'shift_jis' を返す */
+function getEncoding(): string {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) { return 'shift_jis'; }
+    const { encoding } = readProjectSettings(workspaceFolders[0].uri.fsPath);
+    // iconv-lite が受け入れる一般的なエンコーディング名かどうか確認し、空なら shift_jis にフォールバック
+    return encoding || 'shift_jis';
+}
+
 
 /** CATScriptのログファイルを読み込み、OutputChannelに出力する。エラーがあればtrueを返す */
 function flushCatScriptErrors(tempDir: string): boolean {
@@ -55,12 +64,13 @@ export function activate(context: vscode.ExtensionContext) {
         const selected = await vscode.window.showQuickPick(
             [
                 { label: t('language.japanese'), description: t('language.description'), value: 'ja' },
-                { label: t('language.english'), description: t('language.description'), value: 'en' }
+                { label: t('language.english'),  description: t('language.description'), value: 'en' },
+                { label: t('language.chinese'),  description: t('language.description'), value: 'zh' },
             ],
             { placeHolder: t('language.title') }
         );
         if (selected && selected.value !== currentLang) {
-            setLanguage(selected.value as 'ja' | 'en');
+            setLanguage(selected.value as 'ja' | 'en' | 'zh');
             vscode.window.showInformationMessage(t('language.reload'));
         }
     });
@@ -223,6 +233,9 @@ async function executeSelectProject(_context: vscode.ExtensionContext, rootPath?
         rootPath = workspaceFolders[0].uri.fsPath;
     }
 
+    // ワークスペースの encoding 設定を取得
+    const encoding = getEncoding();
+
     const tempDir = path.join(os.tmpdir(), 'cat5dev');
     if (fs.existsSync(tempDir)) {
         fs.rmSync(tempDir, { recursive: true, force: true });
@@ -250,7 +263,7 @@ Sub CATMain()
 
     Set ag_outStr = CreateObject("ADODB.Stream")
     ag_outStr.Type = 2
-    ag_outStr.Charset = "shift_jis"
+    ag_outStr.Charset = "${encoding}"
     ag_outStr.Open
 
     For ag_i = 1 To ag_vbe.VBProjects.Count
@@ -314,7 +327,7 @@ ag_sys.ExecuteScript "${tempDir}", 1, "c5d_list.catvbs", "CATMain", ag_args
             }
 
             const buffer = fs.readFileSync(outTxtPath);
-            const text = iconv.decode(buffer, 'shift_jis');
+            const text = iconv.decode(buffer, encoding);
             const projects = text.split('\n').map(p => p.replace(/\r/g, '').trim()).filter(p => p.length > 0);
 
             fs.unlinkSync(outTxtPath);
@@ -344,6 +357,9 @@ async function executeCatiaPull(context: vscode.ExtensionContext, vbaServer: Vba
         return;
     }
     const rootPath = workspaceFolders[0].uri.fsPath;
+
+    // ワークスペースの encoding 設定を取得
+    const encoding = getEncoding();
 
     const modulesDir = path.join(rootPath, 'modules');
     if (!fs.existsSync(modulesDir)) {
@@ -420,7 +436,7 @@ Sub CATMain()
             ag_outPath = "${tempDir}\\" & ag_comp.Name & "_TYPE_" & ag_comp.Type & ".txt"
             Set ag_outStr = CreateObject("ADODB.Stream")
             ag_outStr.Type = 2
-            ag_outStr.Charset = "shift_jis"
+            ag_outStr.Charset = "${encoding}"
             ag_outStr.Open
             ag_outStr.WriteText ag_codeMod.Lines(1, ag_lineCount)
             ag_outStr.SaveToFile ag_outPath, 2
@@ -498,7 +514,7 @@ sys.ExecuteScript "${tempDir}", 1, "c5d_pull.catvbs", "CATMain", args
                         else if (compType === '3') ext = '.frm_utf'; // Userform
 
                         const shiftJisBuffer = fs.readFileSync(path.join(tempDir, file));
-                        const utf8String = iconv.decode(shiftJisBuffer, 'shift_jis');
+                        const utf8String = iconv.decode(shiftJisBuffer, encoding);
 
                         // Normalize newlines: Remove all trailing newlines/spaces and ensure exactly one LF
                         const normalized = utf8String.replace(/\r/g, '').trimEnd() + '\n';
@@ -537,6 +553,9 @@ async function executeCatiaPush(context: vscode.ExtensionContext) {
         return;
     }
     const rootPath = workspaceFolders[0].uri.fsPath;
+
+    // ワークスペースの encoding 設定を取得
+    const encoding = getEncoding();
 
     const modulesDir = path.join(rootPath, 'modules');
     if (!fs.existsSync(modulesDir)) {
@@ -585,7 +604,7 @@ async function executeCatiaPush(context: vscode.ExtensionContext) {
             localContents[compName] = trimmed;
             localCompTypes[compName] = compType;
 
-            const shiftJisBuffer = iconv.encode(trimmed, 'shift_jis');
+            const shiftJisBuffer = iconv.encode(trimmed, encoding);
 
             const tempFilePath = path.join(tempDir, `${compName}_TYPE_${compType}.txt`);
             fs.writeFileSync(tempFilePath, shiftJisBuffer);
@@ -647,7 +666,7 @@ Sub CATMain()
 
     Set ag_outStr = CreateObject("ADODB.Stream")
     ag_outStr.Type = 2
-    ag_outStr.Charset = "shift_jis"
+    ag_outStr.Charset = "${encoding}"
     ag_outStr.Open
 
     For ag_j = 1 To ag_devProj.VBComponents.Count
@@ -658,7 +677,7 @@ Sub CATMain()
             If ag_lineCount > 0 Then
                 Set ag_codeStr = CreateObject("ADODB.Stream")
                 ag_codeStr.Type = 2
-                ag_codeStr.Charset = "shift_jis"
+                ag_codeStr.Charset = "${encoding}"
                 ag_codeStr.Open
                 ag_codeStr.WriteText ag_comp.CodeModule.Lines(1, ag_lineCount)
                 ag_codeStr.SaveToFile "${tempDir}\\" & ag_comp.Name & "_REMOTE.txt", 2
@@ -726,7 +745,7 @@ ag_sys.ExecuteScript "${tempDir}", 1, "c5d_check.catvbs", "CATMain", ag_args
     let remoteCompNames: string[] = [];
     if (fs.existsSync(remoteCompsFile)) {
         const buffer = fs.readFileSync(remoteCompsFile);
-        const text = iconv.decode(buffer, 'shift_jis');
+        const text = iconv.decode(buffer, encoding);
         remoteCompNames = text.split('\n').map(p => p.replace(/\r/g, '').trim()).filter(p => p.length > 0);
         fs.unlinkSync(remoteCompsFile);
     }
@@ -736,7 +755,7 @@ ag_sys.ExecuteScript "${tempDir}", 1, "c5d_check.catvbs", "CATMain", ag_args
         const remoteFilePath = path.join(tempDir, `${compName}_REMOTE.txt`);
         if (fs.existsSync(remoteFilePath)) {
             const remoteBuf = fs.readFileSync(remoteFilePath);
-            const remoteText = iconv.decode(remoteBuf, 'shift_jis').trimEnd();
+            const remoteText = iconv.decode(remoteBuf, encoding).trimEnd();
             fs.unlinkSync(remoteFilePath);
 
             if (localContents[compName] === remoteText) {
@@ -776,7 +795,7 @@ ag_sys.ExecuteScript "${tempDir}", 1, "c5d_check.catvbs", "CATMain", ag_args
         }
         if (resp === t('dialog.delete')) {
             performDelete = true;
-            const delListShiftJis = iconv.encode(toDelete.join('\r\n'), 'shift_jis');
+            const delListShiftJis = iconv.encode(toDelete.join('\r\n'), encoding);
             fs.writeFileSync(path.join(tempDir, 'delete_list.txt'), delListShiftJis);
         }
     }
@@ -883,7 +902,7 @@ Sub CATMain()
     If fso.FileExists("${tempDir}\\delete_list.txt") Then
         Set inStr = CreateObject("ADODB.Stream")
         inStr.Type = 2
-        inStr.Charset = "shift_jis"
+        inStr.Charset = "${encoding}"
         inStr.Open
         inStr.LoadFromFile "${tempDir}\\delete_list.txt"
 
@@ -973,7 +992,7 @@ Sub CATMain()
                     Else
                         Set inStr = CreateObject("ADODB.Stream")
                         inStr.Type = 2
-                        inStr.Charset = "shift_jis"
+                        inStr.Charset = "${encoding}"
                         inStr.Open
                         inStr.LoadFromFile fp
                         newContent = inStr.ReadText

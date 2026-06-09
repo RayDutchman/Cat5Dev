@@ -95,7 +95,9 @@
             {
                 "scopeName": "injection.vba-keywords",
                 "path": "./syntaxes/vba-keywords.tmLanguage.json",
-                "injectTo": ["source.vb"]
+                "injectTo": [
+                    "source.vb"
+                ]
             }
         ],
         "commands": [
@@ -145,8 +147,13 @@
             {
                 "language": "vb",
                 "scopes": {
-                    "type": ["entity.name.type", "support.class"],
-                    "variable": ["variable.other"]
+                    "type": [
+                        "entity.name.type",
+                        "support.class"
+                    ],
+                    "variable": [
+                        "variable.other"
+                    ]
                 }
             }
         ],
@@ -158,14 +165,21 @@
                         "type": "string",
                         "enum": [
                             "ja",
-                            "en"
+                            "en",
+                            "zh"
                         ],
                         "enumDescriptions": [
                             "日本語",
-                            "English"
+                            "English",
+                            "中文"
                         ],
                         "default": "ja",
-                        "description": "Language for Cat5Dev extension (日本語 or English)"
+                        "description": "Language for Cat5Dev extension (日本語 / English / 中文)"
+                    },
+                    "cat5dev.encoding": {
+                        "type": "string",
+                        "default": "shift_jis",
+                        "description": "Character encoding for VBA files exchanged with CATIA (e.g. shift_jis, gbk, utf-8). Overridden by cat5dev.toml [project] encoding."
                     },
                     "cat5dev.formatter.indentSize": {
                         "type": "number",
@@ -250,7 +264,7 @@
         "@typescript-eslint/eslint-plugin": "^6.13.1",
         "@typescript-eslint/parser": "^6.13.1",
         "eslint": "^8.54.0",
-        "typescript": "^5.3.3"
+        "typescript": "^5.9.3"
     },
     "dependencies": {
         "@types/iconv-lite": "^0.0.1",
