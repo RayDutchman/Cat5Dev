@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\nori\\\\Cat5Dev\" -Recurse -Directory -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -First 20 FullName)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\nori\\\\Cat5Dev\" -Recurse -Directory -ErrorAction SilentlyContinue | Select-Object -First 30 | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\nori\\\\Cat5Dev\\\\src\" -Recurse -Force | Where-Object { $_.Extension -eq \".json\" } | Select-Object -First 50 | ForEach-Object { $_.FullName })",
+      "Bash(npx tsc *)",
+      "Bash(ls -la \"c:\\\\nori\\\\Cat5Dev\\\\\" | head -20)",
+      "Read(//c/nori/**)",
+      "Bash(xargs grep -l \"Enum\\\\|keyword\")",
+      "Bash(go test *)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('contributes',{}\\), indent=2, ensure_ascii=False\\)\\)\")",
+      "PowerShell(python -c \"import json; d=json.load\\(open\\('package.json', encoding='utf-8'\\)\\); print\\(json.dumps\\(d.get\\('contributes',{}\\), indent=2, ensure_ascii=False\\)\\)\")",
+      "PowerShell(npm run compile 2>&1)"
+    ]
+  }
+}

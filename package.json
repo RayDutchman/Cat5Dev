@@ -1,0 +1,260 @@
+{
+    "name": "cat5dev",
+    "displayName": "CATIA V5 VBA",
+    "description": "We provide support for CATIA V5 VBA macro development",
+    "version": "0.4.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kantoku-code/Cat5Dev.git"
+    },
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "catiaVbaContainer",
+                    "title": "CATIA V5 VBA",
+                    "icon": "resources/catia-icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "catiaVbaContainer": [
+                {
+                    "id": "catiaVbaModules",
+                    "name": "Modules"
+                }
+            ]
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "cat5dev.pullFromCatia",
+                    "when": "view == catiaVbaModules",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "cat5dev.pushToCatia",
+                    "when": "view == catiaVbaModules",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "cat5dev.selectProject",
+                    "when": "view == catiaVbaModules",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "cat5dev.refreshTree",
+                    "when": "view == catiaVbaModules",
+                    "group": "navigation@4"
+                },
+                {
+                    "command": "cat5dev.switchLanguage",
+                    "when": "view == catiaVbaModules",
+                    "group": "navigation@5"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "cat5dev.renameFile",
+                    "when": "view == catiaVbaModules && viewItem == catiaModule",
+                    "group": "1@1"
+                },
+                {
+                    "command": "cat5dev.deleteFile",
+                    "when": "view == catiaVbaModules && viewItem == catiaModule",
+                    "group": "1@2"
+                },
+                {
+                    "command": "cat5dev.copyPath",
+                    "when": "view == catiaVbaModules && viewItem == catiaModule",
+                    "group": "1@3"
+                }
+            ]
+        },
+        "languages": [
+            {
+                "id": "vb",
+                "extensions": [
+                    ".bas_utf",
+                    ".cls_utf",
+                    ".frm_utf"
+                ]
+            }
+        ],
+        "grammars": [
+            {
+                "scopeName": "injection.vba-keywords",
+                "path": "./syntaxes/vba-keywords.tmLanguage.json",
+                "injectTo": ["source.vb"]
+            }
+        ],
+        "commands": [
+            {
+                "command": "cat5dev.pullFromCatia",
+                "title": "CATIA: Pull VBA Modules",
+                "icon": "$(cloud-download)"
+            },
+            {
+                "command": "cat5dev.pushToCatia",
+                "title": "CATIA: Push VBA Modules",
+                "icon": "$(cloud-upload)"
+            },
+            {
+                "command": "cat5dev.selectProject",
+                "title": "CATIA: Select Target Project",
+                "icon": "$(settings-gear)"
+            },
+            {
+                "command": "cat5dev.refreshTree",
+                "title": "Refresh Modules",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "cat5dev.switchLanguage",
+                "title": "CATIA: Switch Language",
+                "icon": "$(globe)"
+            },
+            {
+                "command": "cat5dev.renameFile",
+                "title": "Rename"
+            },
+            {
+                "command": "cat5dev.deleteFile",
+                "title": "Delete"
+            },
+            {
+                "command": "cat5dev.copyPath",
+                "title": "Copy Path"
+            },
+            {
+                "command": "cat5dev.init",
+                "title": "CATIA: Initialize Project (cat5dev.toml)"
+            }
+        ],
+        "semanticTokenScopes": [
+            {
+                "language": "vb",
+                "scopes": {
+                    "type": ["entity.name.type", "support.class"],
+                    "variable": ["variable.other"]
+                }
+            }
+        ],
+        "configuration": [
+            {
+                "title": "CATIA V5 VBA",
+                "properties": {
+                    "cat5dev.language": {
+                        "type": "string",
+                        "enum": [
+                            "ja",
+                            "en"
+                        ],
+                        "enumDescriptions": [
+                            "日本語",
+                            "English"
+                        ],
+                        "default": "ja",
+                        "description": "Language for Cat5Dev extension (日本語 or English)"
+                    },
+                    "cat5dev.formatter.indentSize": {
+                        "type": "number",
+                        "default": 4,
+                        "description": "VBAフォーマッタのインデントサイズ"
+                    },
+                    "cat5dev.formatter.capitalizeKeywords": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "VBAキーワードを正規ケースに変換する"
+                    },
+                    "cat5dev.formatter.fixIndentation": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "インデントを自動修正する"
+                    },
+                    "cat5dev.formatter.formatOnSave": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "保存時に自動フォーマットする"
+                    },
+                    "cat5dev.formatter.formatOnPull": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "CATIAからPull後に自動フォーマットする"
+                    },
+                    "cat5dev.formatter.trimTrailingSpace": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "行末の空白を除去する"
+                    },
+                    "cat5dev.formatter.ensureContinuationSpace": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "継続行マーカー _ の前にスペースを追加する (Show(_ → Show( _)"
+                    },
+                    "cat5dev.formatter.indentContinuationLines": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "継続行の次の行を +1 インデントする"
+                    },
+                    "cat5dev.formatter.maxBlankLines": {
+                        "type": "number",
+                        "default": 2,
+                        "description": "連続する空行の最大数 (0=無効)"
+                    },
+                    "cat5dev.formatter.normalizeOperatorSpacing": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "演算子前後のスペースを統一する (x=1+2 → x = 1 + 2)"
+                    },
+                    "cat5dev.formatter.normalizeCommaSpacing": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "コンマ後のスペースを統一する (foo(a,b) → foo(a, b))"
+                    },
+                    "cat5dev.formatter.normalizeCommentSpace": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "コメント記号後にスペースを追加する ('comment → ' comment)"
+                    },
+                    "cat5dev.formatter.expandTypeSuffixes": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "型接尾辞を展開する (Dim x% → Dim x As Integer)"
+                    }
+                }
+            }
+        ]
+    },
+    "scripts": {
+        "compile:go": "cd tools/vbafmt && go build -ldflags=\"-s -w\" -o ../../bin/vbafmt.exe . && cd ../vba-ls && go build -ldflags=\"-s -w\" -o ../../bin/vba-ls.exe .",
+        "vscode:prepublish": "npm run compile:go && npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts"
+    },
+    "devDependencies": {
+        "@types/node": "18.x",
+        "@types/vscode": "^1.85.0",
+        "@typescript-eslint/eslint-plugin": "^6.13.1",
+        "@typescript-eslint/parser": "^6.13.1",
+        "eslint": "^8.54.0",
+        "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "@types/iconv-lite": "^0.0.1",
+        "iconv-lite": "^0.6.3",
+        "vscode-languageclient": "^9.0.1"
+    }
+}
